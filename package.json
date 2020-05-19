@@ -4,10 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon",
-    "start:cache": "nodemon -L",
-    "build": "tsc",
-    "start:prod": "node ./build/index.js"
+    "start": "node ./build/index.js",
+    "startdev": "nodemon -L",
+    "prestart": "tsc"
   },
   "author": "",
   "license": "ISC",
