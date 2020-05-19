@@ -1,0 +1,13 @@
+FROM node:12
+
+WORKDIR /var/build
+COPY ./package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN adduser -D myuser
+USER myuser
+
+CMD node 
