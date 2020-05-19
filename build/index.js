@@ -1,80 +1,83 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const tslib_1 = require("tslib");
-const express_1 = tslib_1.__importDefault(require("express"));
-const cors_1 = tslib_1.__importDefault(require("cors"));
-const morgan_1 = tslib_1.__importDefault(require("morgan"));
-const helmet_1 = tslib_1.__importDefault(require("helmet"));
-const ws_1 = tslib_1.__importDefault(require("ws"));
-const body_parser_1 = tslib_1.__importDefault(require("body-parser"));
-const uuid_1 = require("uuid");
-const PORT = process.env.PORT || 4000;
-const WS_PORT = process.env.WS_PORT ? +process.env.WS_PORT : 4001;
-const app = express_1.default();
+var express_1 = __importDefault(require("express"));
+var cors_1 = __importDefault(require("cors"));
+var morgan_1 = __importDefault(require("morgan"));
+var helmet_1 = __importDefault(require("helmet"));
+var ws_1 = __importDefault(require("ws"));
+var body_parser_1 = __importDefault(require("body-parser"));
+var uuid_1 = require("uuid");
+var PORT = process.env.PORT || 4000;
+var WS_PORT = process.env.WS_PORT ? +process.env.WS_PORT : 4001;
+var app = express_1.default();
 app.use(body_parser_1.default.urlencoded({ extended: true }));
 app.use(body_parser_1.default.json());
 app.use(helmet_1.default());
 app.use(cors_1.default());
 app.use(morgan_1.default('dev'));
-const wss = new ws_1.default.Server({ port: WS_PORT });
-const map = new Map();
-const users = new Map();
-const sockets = new Map();
-const add = (map, id, data) => {
+var wss = new ws_1.default.Server({ port: WS_PORT });
+var map = new Map();
+var users = new Map();
+var sockets = new Map();
+var add = function (map, id, data) {
     if (map.has(id)) {
-        const arr = map.get(id);
+        var arr = map.get(id);
         arr.push(data);
     }
     else {
         map.set(id, [data]);
     }
 };
-wss.on('connection', (ws, req) => {
-    const { url } = req;
+wss.on('connection', function (ws, req) {
+    var url = req.url;
     if (!url) {
         return;
     }
-    const [, id] = url.split('=');
-    ws.on('message', (message) => {
-        const { id, userId, offer } = JSON.parse(message.toString());
-        add(map, id, { offer, userId });
+    var _a = url.split('='), id = _a[1];
+    ws.on('message', function (message) {
+        var _a = JSON.parse(message.toString()), id = _a.id, userId = _a.userId, offer = _a.offer;
+        add(map, id, { offer: offer, userId: userId });
         users.set(userId, ws);
         sockets.set(ws, userId);
-        const data = map.get(id);
-        data.forEach(user => {
+        var data = map.get(id);
+        data.forEach(function (user) {
             if (userId === user.userId) {
                 return;
             }
-            const socket = users.get(user.userId);
+            var socket = users.get(user.userId);
             if (!socket) {
                 return;
             }
-            socket.send(JSON.stringify({ message: 'offer', data: { offer, id, userId } }));
+            socket.send(JSON.stringify({ message: 'offer', data: { offer: offer, id: id, userId: userId } }));
         });
     });
-    ws.on('close', () => {
-        const userId = sockets.get(ws);
+    ws.on('close', function () {
+        var userId = sockets.get(ws);
         users.delete(userId);
-        const data = map.get(id);
+        var data = map.get(id);
         if (!data) {
             return;
         }
-        const arr = data.filter(o => o.userId !== userId);
+        var arr = data.filter(function (o) { return o.userId !== userId; });
         arr.length ? map.set(id, arr) : map.delete(id);
     });
 });
-app.post('/channel', (req, response) => {
-    const id = uuid_1.v4();
+app.post('/channel', function (req, response) {
+    var id = uuid_1.v4();
     response.send(id);
 });
-app.post('/answer', ({ body: { userId, answer } }, response) => {
+app.post('/answer', function (_a, response) {
+    var _b = _a.body, userId = _b.userId, answer = _b.answer;
     console.log('answer', userId, answer);
-    const data = users.get(userId);
+    var data = users.get(userId);
     if (data) {
         data.send(JSON.stringify({ message: 'answer', data: answer }));
     }
     response.send();
 });
-app.listen(PORT, () => {
-    console.log(`Listening on ${PORT}`);
+app.listen(PORT, function () {
+    console.log("Listening on " + PORT);
 });
